@@ -1,8 +1,8 @@
 bl_info = {
         "name": "Export GameMaker 3D Model (.txt .d3d)",
-        "author": "Martin Crownover & JimmyBegg",
-        "version": (1, 1),
-        "blender": (2, 7, 2),
+        "author": "Martin Crownover & JimmyBegg, Darknet ",
+        "version": (1, 2),
+        "blender": (2, 7, 3),
         "location": "File > Export",
         "description": "Export 3D Model for GameMaker",
         "warning": "",
@@ -29,8 +29,6 @@ import shutil
 import bpy
 import mathutils
 from math import radians
-
-
 
 def prepMesh(object, flippy):
         bneedtri = False
@@ -188,19 +186,30 @@ def do_export(context, props, filepath):
 
         return True
 
+bpy.types.Scene.output_d3d = BoolProperty(
+        name        = "Save as .d3d",
+        description = "Exports the model in .D3D format instead of gml or text",
+        default     = True)
 
 ###### EXPORT OPERATOR #######
-class Export_gm3d(bpy.types.Operator, ExportHelper):
+class Export_gm3d(bpy.types.Operator):
         '''Exports the active Object as a GameMaker Model'''
         bl_idname = "export_object.txt"
-        bl_label = "Export GameMaker 3D Model (.txt .d3d)"
+        bl_label = "Export GameMaker 3D Model (.gml .d3d)"
 
         filename_ext = ""
+		
+        filepath = StringProperty(
+            subtype='FILE_PATH',
+            )
+			
+        filter_glob = StringProperty(
+            default="*.d3d;*.gml;*txt",
+            options={'HIDDEN'},
+            )
 
-        output_d3d = BoolProperty(name="Save as .D3D",
-                                                        description="Exports the model in .D3D format instead of txt",
-                                                        default=False)
-
+        output_d3d = bpy.types.Scene.output_d3d
+		
         apply_modifiers = BoolProperty(name="Apply Modifiers",
                                                         description="Applies Modifiers to the Object before exporting",
                                                         default=True)
@@ -264,17 +273,16 @@ class Export_gm3d(bpy.types.Operator, ExportHelper):
 ### REGISTER ###
 
 def menu_func(self, context):
-        self.layout.operator(Export_gm3d.bl_idname, text="GameMaker Model Export (.txt .d3d)")
+    default_path = os.path.splitext(bpy.data.filepath)[0] + ".d3d"
+    self.layout.operator(Export_gm3d.bl_idname, text="GameMaker Model Export (.gml .d3d)").filepath = default_path
 
 def register():
-        bpy.utils.register_module(__name__)
-
-        bpy.types.INFO_MT_file_export.append(menu_func)
+    bpy.utils.register_module(__name__)
+    bpy.types.INFO_MT_file_export.append(menu_func)
 
 def unregister():
-        bpy.utils.unregister_module(__name__)
-
-        bpy.types.INFO_MT_file_export.remove(menu_func)
+    bpy.utils.unregister_module(__name__)
+    bpy.types.INFO_MT_file_export.remove(menu_func)
 
 if __name__ == "__main__":
         register()
