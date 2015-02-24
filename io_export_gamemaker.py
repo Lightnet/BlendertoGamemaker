@@ -1,10 +1,10 @@
 bl_info = {
-        "name": "Export GameMaker 3D Model (.txt .d3d)",
+        "name": "Export GameMaker: Studio 3D Model (.d3d,.gml as .txt)",
         "author": "Martin Crownover & JimmyBegg, Darknet ",
         "version": (1, 2),
         "blender": (2, 7, 3),
         "location": "File > Export",
-        "description": "Export 3D Model for GameMaker",
+        "description": "Export 3D Model for GameMaker: Studio",
         "warning": "",
         "wiki_url": "",
         "tracker_url": "",
@@ -12,23 +12,15 @@ bl_info = {
 
 '''
 Usage Notes:
-Build your 3D model, select it, then go to File > Export > GameMaker Model (.txt, .d3d).
+Build your 3D model, select it, then go to File > Export > GameMaker Model (.gml(.txt), .d3d).
 Set options as desired and export.
 '''
 
 import bpy
 from bpy.props import *
-import mathutils, math, struct
 import os
-from os import remove
 import time
-import bpy_extras
-from bpy_extras.io_utils import ExportHelper
-import time
-import shutil
-import bpy
 import mathutils
-from math import radians
 
 def prepMesh(object, flippy):
         bneedtri = False
@@ -71,9 +63,8 @@ def prepMesh(object, flippy):
 
         return me_ob
 
-
 def writeString(file, string):
-        file.write(bytes(string, 'UTF-8'))
+    file.write(bytes(string, 'UTF-8'))
 
 def do_export(context, props, filepath):
         ob = context.active_object
@@ -82,9 +73,7 @@ def do_export(context, props, filepath):
         apply_modifiers = props.apply_modifiers
 
         mesh = me_ob.to_mesh(current_scene, apply_modifiers, 'PREVIEW')
-
         basename = mesh.name.capitalize()
-
 
         if props.rot_x90:
                 mesh.transform(mathutils.Matrix.Rotation(radians(90.0), 4, 'X'))
@@ -94,7 +83,6 @@ def do_export(context, props, filepath):
                 #normals get flipped in prepMesh
 
         mesh.transform(mathutils.Matrix.Scale(props.mod_scale, 4))
-
         file = open(filepath, "wb")
 
         if props.output_d3d: #if d3d is selected then output .d3d file
@@ -187,91 +175,94 @@ def do_export(context, props, filepath):
         return True
 
 bpy.types.Scene.output_d3d = BoolProperty(
-        name        = "Save as .d3d",
-        description = "Exports the model in .D3D format instead of gml or text",
-        default     = True)
+    name        = "Save as .d3d",
+    description = "Exports the model in .d3d format instead of .gml as .txt",
+    default     = True)
 
 ###### EXPORT OPERATOR #######
 class Export_gm3d(bpy.types.Operator):
-        '''Exports the active Object as a GameMaker Model'''
-        bl_idname = "export_object.txt"
-        bl_label = "Export GameMaker 3D Model (.gml .d3d)"
+	'''Exports the active Object as a GameMaker Model'''
+	bl_idname = "export_object.txt"
+	bl_label = "Export GameMaker: Studio 3D Model (.gml .d3d)"
 
-        filename_ext = ""
+	filename_ext = ""
+	
+	filepath = StringProperty(
+		subtype='FILE_PATH',
+		)
 		
-        filepath = StringProperty(
-            subtype='FILE_PATH',
-            )
-			
-        filter_glob = StringProperty(
-            default="*.d3d;*.gml;*txt",
-            options={'HIDDEN'},
-            )
+	filter_glob = StringProperty(
+		default="*.d3d;*.gml;*txt",
+		options={'HIDDEN'},
+		)
 
-        output_d3d = bpy.types.Scene.output_d3d
-		
-        apply_modifiers = BoolProperty(name="Apply Modifiers",
-                                                        description="Applies Modifiers to the Object before exporting",
-                                                        default=True)
+	output_d3d = bpy.types.Scene.output_d3d
+	
+	apply_modifiers = BoolProperty(name="Apply Modifiers",
+													description="Applies Modifiers to the Object before exporting",
+													default=True)
 
-        rot_x90 = BoolProperty(name="Rotate X by 90",
-                                                        description="Rotate 90 degrees around X to convert to Y-up",
-                                                        default=False)
+	rot_x90 = BoolProperty(name="Rotate X by 90",
+													description="Rotate 90 degrees around X to convert to Y-up",
+													default=False)
 
-        flip_y = BoolProperty(name="Flip Y Coordinates",
-                                                        description="Flips the Y coordinates of the object",
-                                                        default=True)
+	flip_y = BoolProperty(name="Flip Y Coordinates",
+													description="Flips the Y coordinates of the object",
+													default=True)
 
-        flip_uvs = BoolProperty(name="Flip UV Vertically",
-                                                        description="Flips the UV coordinates on the Y axis",
-                                                        default=True)
+	flip_uvs = BoolProperty(name="Flip UV Vertically",
+													description="Flips the UV coordinates on the Y axis",
+													default=True)
 
-        mod_scale = FloatProperty(name="Scale",
-                                                        description="Adjusts the scale of the model",
-                                                        default=1.0)
+	mod_scale = FloatProperty(name="Scale",
+													description="Adjusts the scale of the model",
+													default=1.0)
 
-        @classmethod
-        def poll(cls, context):
-                return context.active_object.type in ['MESH', 'CURVE', 'SURFACE', 'FONT']
+	@classmethod
+	def poll(cls, context):
+			return context.active_object.type in ['MESH', 'CURVE', 'SURFACE', 'FONT']
 
-        def execute(self, context):
-                start_time = time.time()
-                print('\n_____START_____')
-                props = self.properties
-                filepath = self.filepath
-                if self.output_d3d:
-                        filepath = bpy.path.ensure_ext(filepath, ".d3d")
-                else:
-                        filepath = bpy.path.ensure_ext(filepath, ".txt")
+	def execute(self, context):
+			start_time = time.time()
+			print('\n_____START_____')
+			props = self.properties
+			filepath = self.filepath
+			if self.output_d3d:
+					filepath = bpy.path.ensure_ext(filepath, ".d3d")
+			else:
+					filepath = bpy.path.ensure_ext(filepath, ".gml")
 
-                exported = do_export(context, props, filepath)
+			exported = do_export(context, props, filepath)
 
-                if exported:
-                        print('finished export in %s seconds' %((time.time() - start_time)))
-                        print(filepath)
+			message = ""
+			if exported:
+				print('finished export in %s seconds' %((time.time() - start_time)))
+				print(filepath)
+				message = "Finish Export! File Path=" + filepath
+			else:
+				message = "Fail to Export!"
+			self.report({'ERROR', 'INFO'}, message)
+			return {'FINISHED'}
 
-                return {'FINISHED'}
+	def invoke(self, context, event):
+			wm = context.window_manager
 
-        def invoke(self, context, event):
-                wm = context.window_manager
-
-                if True:
-                        # File selector
-                        wm.fileselect_add(self) # will run self.execute()
-                        return {'RUNNING_MODAL'}
-                elif True:
-                        # search the enum
-                        wm.invoke_search_popup(self)
-                        return {'RUNNING_MODAL'}
-                elif False:
-                        # Redo popup
-                        return wm.invoke_props_popup(self, event) #
-                elif False:
-                        return self.execute(context)
+			if True:
+					# File selector
+					wm.fileselect_add(self) # will run self.execute()
+					return {'RUNNING_MODAL'}
+			elif True:
+					# search the enum
+					wm.invoke_search_popup(self)
+					return {'RUNNING_MODAL'}
+			elif False:
+					# Redo popup
+					return wm.invoke_props_popup(self, event) #
+			elif False:
+					return self.execute(context)
 
 
 ### REGISTER ###
-
 def menu_func(self, context):
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".d3d"
     self.layout.operator(Export_gm3d.bl_idname, text="GameMaker Model Export (.gml .d3d)").filepath = default_path
@@ -285,4 +276,4 @@ def unregister():
     bpy.types.INFO_MT_file_export.remove(menu_func)
 
 if __name__ == "__main__":
-        register()
+    register()
