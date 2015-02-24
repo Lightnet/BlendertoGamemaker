@@ -265,7 +265,7 @@ class Export_gm3d(bpy.types.Operator):
 ### REGISTER ###
 def menu_func(self, context):
     default_path = os.path.splitext(bpy.data.filepath)[0] + ".d3d"
-    self.layout.operator(Export_gm3d.bl_idname, text="GameMaker Model Export (.gml .d3d)").filepath = default_path
+    self.layout.operator(Export_gm3d.bl_idname, text="GameMaker: Studio Model Export (.gml .d3d)").filepath = default_path
 
 def register():
     bpy.utils.register_module(__name__)
